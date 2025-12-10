@@ -1,0 +1,66 @@
+// ----------------------------------------------------------
+// Author: Nandan Kumar
+// Date: 11/20/2025
+// Assignment-11: Calculation Model + Modular FastAPI Setup
+// File: .vscode/settings.json
+// ----------------------------------------------------------
+// Description:
+// VS Code configuration optimized for:
+//   • FastAPI + SQLAlchemy + Pydantic v2
+//   • WSL2 Ubuntu development
+//   • Black formatting, pylint, pytest
+//   • Pylance auto-import for 'app.*' modules
+//   • Clean workspace excluding cache folders
+// ----------------------------------------------------------
+{
+    // --------------------------------------------------------
+    // Python Environment (WSL2)
+    // --------------------------------------------------------
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
+    "python.analysis.extraPaths": [
+        "./app"
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+    // --------------------------------------------------------
+    // Linting + Formatting
+    // --------------------------------------------------------
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "black",
+    // --------------------------------------------------------
+    // Pytest Configuration
+    // --------------------------------------------------------
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.autoTestDiscoverOnSaveEnabled": true,
+    // --------------------------------------------------------
+    // Exclude Cache Files (Clean Explorer)
+    // --------------------------------------------------------
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "**/.mypy_cache": true
+    },
+    // --------------------------------------------------------
+    // Editor & Terminal Behavior
+    // --------------------------------------------------------
+    "files.autoSave": "onFocusChange",
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.env.linux": {
+        "PYTHONPATH": "${workspaceFolder}"
+    },
+    // --------------------------------------------------------
+    // Environment Manager (Recommended for VS Code)
+    // --------------------------------------------------------
+    "python.envs.defaultEnvManager": "ms-python.python:virtualenv",
+    // --------------------------------------------------------
+    // Docker Integration (Optional)
+    // --------------------------------------------------------
+    "docker.defaultContext": "default",
+    "docker.explorerRefreshInterval": 2500
+}

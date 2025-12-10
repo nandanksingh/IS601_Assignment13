@@ -1,0 +1,263 @@
+/*
+    Author: Nandan Kumar
+    Assignment 13: Global Stylesheet
+    File: static/css/style.css
+
+    Description:
+    Shared design system for the entire application: background theme,
+    navbar layout, forms, inputs, buttons, dashboard containers, tables,
+    logout page, and utility classes. Ensures consistent UI everywhere.
+*/
+
+/* ----------------------------------------------------------
+   CSS Variables (Unified Theme Colors)
+---------------------------------------------------------- */
+:root {
+    --primary-bg1: #0a4d7a;
+    --primary-bg2: #0e6fa8;
+    --primary-bg3: #13a7c7;
+    --primary-bg4: #17c7e8;
+
+    --card-bg: rgba(255, 255, 255, 0.18);
+    --card-bg-strong: rgba(255, 255, 255, 0.22);
+    --input-bg: rgba(255, 255, 255, 0.75);
+
+    --nav-text: #e6ffff;
+    --white: #ffffff;
+    --button-blue: #005eff;
+    --button-blue-hover: #0049cc;
+
+    --shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+/* ----------------------------------------------------------
+   Background Gradient Animation
+---------------------------------------------------------- */
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg,
+            var(--primary-bg1),
+            var(--primary-bg2),
+            var(--primary-bg3),
+            var(--primary-bg4));
+    background-size: 200% 200%;
+    animation: shiftGradient 9s ease infinite;
+    color: var(--white);
+}
+
+@keyframes shiftGradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* ----------------------------------------------------------
+   Navigation Bar
+---------------------------------------------------------- */
+.navbar {
+    background: rgba(0, 0, 0, 0.45);
+    padding: 18px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(8px);
+}
+
+.nav-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--nav-text);
+}
+
+.nav-links a {
+    margin-left: 26px;
+    color: var(--white);
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.nav-links a:hover {
+    color: #c0f5ff;
+    text-decoration: underline;
+}
+
+/* ----------------------------------------------------------
+   Base Page Container
+---------------------------------------------------------- */
+.page-container {
+    padding: 40px 20px;
+}
+
+/* ----------------------------------------------------------
+   Centered Glass-Card (Homepage, Login, Register)
+---------------------------------------------------------- */
+.center-box {
+    max-width: 450px;
+    margin: 80px auto;
+    background: var(--card-bg);
+    padding: 40px 50px;
+    border-radius: 18px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow);
+}
+
+h2 {
+    margin-bottom: 18px;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+/* ----------------------------------------------------------
+   Inputs
+---------------------------------------------------------- */
+input,
+select {
+    width: 100%;
+    padding: 14px;
+    margin: 10px 0 18px;
+    border-radius: 12px;
+    border: none;
+    background: var(--input-bg);
+    font-size: 17px;
+    transition: 0.20s ease;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    box-shadow: 0 0 10px var(--white);
+}
+
+/* Message Text */
+.message {
+    margin-top: 10px;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+/* ----------------------------------------------------------
+   Buttons
+---------------------------------------------------------- */
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--button-blue);
+    color: var(--white);
+    font-weight: bold;
+    font-size: 17px;
+    cursor: pointer;
+    transition: 0.25s ease;
+}
+
+button:hover {
+    transform: scale(1.05);
+    background: var(--button-blue-hover);
+}
+
+/* Compact Buttons */
+.btn-small {
+    padding: 8px 14px;
+    font-size: 15px;
+    width: auto;
+}
+
+/* Delete Button */
+.delete-btn {
+    background: #d9534f;
+}
+
+.delete-btn:hover {
+    background: #c9302c;
+}
+
+/* ----------------------------------------------------------
+   Dashboard Containers
+---------------------------------------------------------- */
+.dashboard-container {
+    max-width: 850px;
+    margin: 40px auto;
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow);
+}
+
+.dashboard-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+/* ----------------------------------------------------------
+   Tables
+---------------------------------------------------------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+}
+
+th,
+td {
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.55);
+    color: #000;
+    text-align: center;
+}
+
+th {
+    background: rgba(255, 255, 255, 0.75);
+}
+
+/* ----------------------------------------------------------
+   Logout Page Box
+---------------------------------------------------------- */
+.logout-box {
+    padding: 60px;
+    background: var(--card-bg-strong);
+    border-radius: 18px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 600;
+    backdrop-filter: blur(12px);
+}
+
+.subtitle {
+    margin-top: 10px;
+    opacity: 0.9;
+    font-size: 18px;
+}
+
+/* ----------------------------------------------------------
+   Responsive Adjustments
+---------------------------------------------------------- */
+@media (max-width: 600px) {
+
+    .center-box,
+    .dashboard-container {
+        width: 90%;
+        padding: 28px;
+    }
+
+    .navbar {
+        padding: 14px 20px;
+    }
+
+    .nav-links a {
+        margin-left: 14px;
+    }
+}

@@ -1,0 +1,130 @@
+# ----------------------------------------------------------
+# Author: Nandan Kumar
+# Assignment-13: JWT Login/Registration with Client-Side Validation & Playwright E2E
+# File: docker-compose.yml
+# ----------------------------------------------------------
+
+name: fastapi_calculator_project
+
+services:
+
+  # --------------------------------------------------------
+  # FASTAPI APPLICATION
+  # --------------------------------------------------------
+  app:
+    container_name: m13_fastapi_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nandanksingh/module13_fastapi_jwt_auth:img_m13
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    labels:
+      - "com.docker.desktop.dashboard.portlet.0.title=Swagger UI"
+      - "com.docker.desktop.dashboard.portlet.0.link=http://localhost:8000/docs"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app
+    networks:
+      - app-network
+
+  # --------------------------------------------------------
+  # POSTGRES DATABASE (PERSISTENT)
+  # --------------------------------------------------------
+  db:
+    container_name: m13_postgres
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - app-network
+
+  # --------------------------------------------------------
+  # PGADMIN (PERSISTENT)
+  # --------------------------------------------------------
+  pgadmin:
+    container_name: m13_pgadmin
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - app-network
+
+  # --------------------------------------------------------
+  # PYTEST CONTAINER
+  # --------------------------------------------------------
+  tests:
+    container_name: m13_tests_integration
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: m13_tests_image:img_m13
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/test_db
+    command: >
+      bash -c "
+        export PGPASSWORD=${POSTGRES_PASSWORD};
+
+        echo 'Waiting for PostgreSQL...';
+        until pg_isready -h db -U ${POSTGRES_USER}; do sleep 2; done;
+
+        echo 'Checking test_db...';
+        EXISTS=$(psql -h db -U ${POSTGRES_USER} -d postgres -tAc \"SELECT 1 FROM pg_database WHERE datname='test_db';\")
+
+        if [ \"$EXISTS\" != \"1\" ]; then
+            echo 'Creating test_db...';
+            psql -h db -U ${POSTGRES_USER} -d postgres -c \"CREATE DATABASE test_db;\"
+        fi
+
+        echo 'Running pytest...';
+        pytest -m \"not e2e\" --cov=app --cov-report=term-missing --cov-fail-under=90 -v --disable-warnings;
+      "
+    networks:
+      - app-network
+
+# ----------------------------------------------------------
+# VOLUMES (PERSISTENCE)
+# ----------------------------------------------------------
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+# ----------------------------------------------------------
+# NETWORK
+# ----------------------------------------------------------
+networks:
+  app-network:
+    driver: bridge

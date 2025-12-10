@@ -1,0 +1,72 @@
+<!-- ----------------------------------------------------------
+     Author: Nandan Kumar
+     Assignment 13: Login Page
+     File: templates/login.html
+
+     Description:
+     This page handles user authentication using email/mobile
+     and password. On success, it stores the JWT access token and
+     username in localStorage, updates navigation state, and
+     redirects users to the dashboard. Includes client-side
+     validation and graceful error handling.
+----------------------------------------------------------- -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<div class="center-box">
+    <h2>Login</h2>
+
+    <input type="text" id="identifier" placeholder="Email or Mobile" required />
+    <input type="password" id="password" placeholder="Password" required />
+
+    <button onclick="submitLogin()">Login</button>
+
+    <div id="message" class="message"></div>
+</div>
+
+<script>
+    async function submitLogin() {
+        clearAuth(); // Clear old tokens
+
+        const identifier = document.getElementById("identifier").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const msg = document.getElementById("message");
+
+        if (!identifier || !password) {
+            msg.style.color = "yellow";
+            msg.textContent = "Both fields are required.";
+            return;
+        }
+
+        try {
+            const response = await fetch("/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ identifier, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                msg.style.color = "red";
+                msg.textContent = data.detail || "Login failed.";
+                return;
+            }
+
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("username", data.username);
+
+            msg.style.color = "lightgreen";
+            msg.textContent = "Login successful. Redirecting...";
+
+            setTimeout(() => window.location.href = "/dashboard", 900);
+
+        } catch (err) {
+            msg.style.color = "red";
+            msg.textContent = "An error occurred. Try again.";
+        }
+    }
+</script>
+
+{% endblock %}

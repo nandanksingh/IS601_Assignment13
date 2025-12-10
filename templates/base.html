@@ -1,0 +1,65 @@
+<!-- ----------------------------------------------------------
+     Author: Nandan Kumar
+     Assignment 13: Base Template
+     File: templates/base.html
+
+     Description:
+     Global layout inherited by all UI pages. Includes animated
+     gradient background, dark navbar, dynamic login/logout state,
+     and a content block for child templates.
+----------------------------------------------------------- -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>
+        {% if title %} {{ title }} — Calculations App {% else %} Calculations App {% endif %}
+    </title>
+
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <script src="/static/js/script.js"></script>
+</head>
+
+<body>
+
+    <!-- NAVIGATION BAR -->
+    <nav class="navbar">
+        <div class="nav-title">Calculations App</div>
+
+        <div class="nav-links" id="navLinks">
+            <a href="/">Home</a>
+            <a href="/login">Login</a>
+            <a href="/register">Register</a>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Navbar Login State Control -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = localStorage.getItem("access_token");
+            const username = localStorage.getItem("username");
+            const nav = document.getElementById("navLinks");
+
+            if (token && username) {
+                nav.innerHTML = `
+                    <span style="margin-right: 18px;">
+                        Welcome, <strong>${username}</strong>
+                    </span>
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="#" onclick="logoutUser()">Logout</a>
+                `;
+            }
+        });
+    </script>
+
+</body>
+
+</html>

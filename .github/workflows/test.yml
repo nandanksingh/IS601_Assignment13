@@ -1,0 +1,184 @@
+# ----------------------------------------------------------
+# Author: Nandan Kumar
+# Assignment-13: JWT Login/Registration + Client Validation + Playwright E2E
+# File: .github/workflows/test.yml
+# ----------------------------------------------------------
+
+name: Assignment 13 - JWT Auth + UI + E2E CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+
+  # --------------------------------------------------------
+  # 1. TEST JOB (Unit + Integration Only)
+  # --------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ps_user
+          POSTGRES_PASSWORD: ps_password
+          POSTGRES_DB: calc_m13_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U ps_user -d calc_m13_db"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=8
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        env:
+          DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -U ps_user -d calc_m13_db && break
+            echo "Waiting for PostgreSQL..."
+            sleep 1
+          done
+
+      - name: Run Unit + Integration Tests
+        env:
+          DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
+          TEST_DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/test_db
+        run: |
+          source venv/bin/activate
+          pytest -m "not e2e" --cov=app --cov-branch --cov-report=term-missing --cov-fail-under=90 -v
+
+
+  # --------------------------------------------------------
+  # 2. PLAYWRIGHT E2E TESTING JOB
+  # --------------------------------------------------------
+  e2e:
+    needs: test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ps_user
+          POSTGRES_PASSWORD: ps_password
+          POSTGRES_DB: calc_m13_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U ps_user -d calc_m13_db"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies + Playwright Browsers
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          pip install pytest-playwright
+          playwright install --with-deps chromium
+
+      - name: Start FastAPI App
+        run: |
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+
+      - name: Run Playwright E2E Tests
+        env:
+          E2E_BASE_URL: http://localhost:8000
+        run: |
+          source venv/bin/activate
+          pytest -m "e2e" -v
+
+  # --------------------------------------------------------
+  # 3. SECURITY JOB — Trivy Scan
+  # --------------------------------------------------------
+  security:
+    needs: [test, e2e]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker Image for Scan
+        run: docker build -t module13_app_image:img_m13 .
+
+      - name: Trivy Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: module13_app_image:img_m13
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+
+  # --------------------------------------------------------
+  # 4. DEPLOY JOB — Push to Docker Hub
+  # --------------------------------------------------------
+  deploy:
+    needs: security
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker Hub Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & Push Assignment 13 Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            nandanksingh/module13_fastapi_jwt_auth:latest
+            nandanksingh/module13_fastapi_jwt_auth:img_m13
+            nandanksingh/module13_fastapi_jwt_auth:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+
+      - name: Verify Push
+        run: docker pull nandanksingh/module13_fastapi_jwt_auth:img_m13

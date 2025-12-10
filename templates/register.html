@@ -1,0 +1,97 @@
+<!-- ----------------------------------------------------------
+     Author: Nandan Kumar
+     Assignment 13: Register Page
+     File: templates/register.html
+
+     FINAL VERSION — FULLY MATCHING BACKEND SCHEMA
+     • Sends all 7 required fields to backend
+     • Includes confirm_password
+     • Client-side password check
+     • Clear success/error messages
+     • Calconic UI maintained exactly
+----------------------------------------------------------- -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<div class="center-box">
+    <h2>Create Account</h2>
+
+    <div id="message" class="message"></div>
+
+    <input type="text" id="first_name" placeholder="First Name" required />
+    <input type="text" id="last_name" placeholder="Last Name" required />
+    <input type="text" id="username" placeholder="Username" required />
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="text" id="mobile" placeholder="Mobile Number" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <input type="password" id="confirm_password" placeholder="Confirm Password" required />
+
+    <button onclick="registerUser()">Register</button>
+
+    <p style="margin-top:15px; font-size:16px;">
+        Already have an account?
+        <a href="/login" style="color:white; text-decoration:underline;">Login</a>
+    </p>
+</div>
+
+<script>
+    async function registerUser() {
+        const messageBox = document.getElementById("message");
+        messageBox.textContent = "";
+
+        // Collect fields
+        const data = {
+            first_name: document.getElementById("first_name").value.trim(),
+            last_name: document.getElementById("last_name").value.trim(),
+            username: document.getElementById("username").value.trim(),
+            email: document.getElementById("email").value.trim(),
+            mobile: document.getElementById("mobile").value.trim(),
+            password: document.getElementById("password").value,
+            confirm_password: document.getElementById("confirm_password").value
+        };
+
+        // Basic validation before sending
+        if (data.password !== data.confirm_password) {
+            messageBox.style.color = "red";
+            messageBox.textContent = "Passwords do not match.";
+            return;
+        }
+
+        try {
+            const res = await fetch("/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+
+            const result = await res.json();
+
+            if (!res.ok) {
+                let msg = "Registration failed.";
+                if (result.detail) {
+                    if (Array.isArray(result.detail)) {
+                        msg = result.detail[0].msg;  // Pydantic-style errors
+                    } else if (typeof result.detail === "string") {
+                        msg = result.detail;
+                    }
+                }
+
+                messageBox.style.color = "red";
+                messageBox.textContent = msg;
+                return;
+            }
+
+            // Success
+            messageBox.style.color = "lightgreen";
+            messageBox.textContent = "Registration successful! Redirecting...";
+
+            setTimeout(() => (window.location.href = "/login"), 1200);
+        } catch (err) {
+            messageBox.style.color = "red";
+            messageBox.textContent = "Unexpected error. Please try again.";
+        }
+    }
+</script>
+
+{% endblock %}

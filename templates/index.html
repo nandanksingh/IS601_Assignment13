@@ -1,0 +1,33 @@
+<!-- ----------------------------------------------------------
+     Author: Nandan Kumar
+     Assignment 13: Homepage
+     File: templates/index.html
+
+     Description:
+     Public landing page for the application. If a user is already
+     authenticated, they are automatically redirected to the
+     dashboard. Otherwise, the page displays a clean welcome
+     message encouraging the user to log in or register.
+----------------------------------------------------------- -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<script>
+  // Redirect authenticated users
+  if (localStorage.getItem("access_token")) {
+    window.location.href = "/dashboard";
+  }
+</script>
+
+<div class="center-box" style="max-width:650px;">
+
+  <h2>Welcome to Nandan's Calculations App</h2>
+
+  <p style="font-size:18px; margin-top:10px;">
+    Please login or register to start using the application.
+  </p>
+
+</div>
+
+{% endblock %}

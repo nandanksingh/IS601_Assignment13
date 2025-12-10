@@ -1,0 +1,30 @@
+<!-- ----------------------------------------------------------
+     Author: Nandan Kumar
+     Assignment 13: Logout Page
+     File: templates/logout.html
+
+     Description:
+     This page clears all authentication data from localStorage,
+     preventing unauthorized access to protected routes. After
+     showing a friendly confirmation message, the user is
+     automatically redirected to the homepage. No backend logout
+     endpoint is necessary for this workflow.
+----------------------------------------------------------- -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<script>
+    clearAuth();
+
+    setTimeout(() => {
+        window.location.href = "/";
+    }, 1500);
+</script>
+
+<div class="logout-box" style="max-width: 500px; margin: 120px auto;">
+    <div>You have been logged out successfully 😊</div>
+    <div class="subtitle">Redirecting you to the homepage...</div>
+</div>
+
+{% endblock %}

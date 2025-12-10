@@ -1,0 +1,207 @@
+<!-- ----------------------------------------------------------
+     Author: Nandan Kumar
+     Assignment 13: Dashboard Page
+     File: templates/dashboard.html
+
+     Description:
+     Authenticated dashboard page:
+       • New calculation form
+       • Clean error handling (no [object Object])
+       • Calculation history table
+       • Delete functionality
+----------------------------------------------------------- -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<script>
+    /* ----------------------------------------------------------
+       PAGE LOAD — VERIFY AUTH
+    ----------------------------------------------------------- */
+    document.addEventListener("DOMContentLoaded", () => {
+
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+            window.location.href = "/login";
+            return;
+        }
+
+        loadHistory();
+
+        /* ------------------------------------------------------
+           NEW CALCULATION SUBMIT HANDLER
+        ------------------------------------------------------ */
+        document.getElementById("calcForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const msgBox = document.getElementById("calcMessage");
+            msgBox.textContent = "";
+
+            const type = document.getElementById("calcType").value;
+            const a = Number(document.getElementById("numA").value);
+            const b = Number(document.getElementById("numB").value);
+
+            try {
+                const response = await fetch("/calculations", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("access_token")}`
+                    },
+                    body: JSON.stringify({ type, a, b })
+                });
+
+                const result = await response.json();
+
+                /* --------------------------------------------------
+                   FIXED — HUMAN READABLE ERROR MESSAGES
+                -------------------------------------------------- */
+                if (!response.ok) {
+                    msgBox.style.color = "red";
+
+                    let errorMessage = "Operation failed.";
+
+                    if (typeof result.detail === "string") {
+                        errorMessage = result.detail;
+                    }
+                    else if (result.detail?.msg) {
+                        errorMessage = result.detail.msg;
+                    }
+                    else if (Array.isArray(result.detail) && result.detail[0]?.msg) {
+                        errorMessage = result.detail[0].msg;
+                    }
+
+                    msgBox.textContent = errorMessage;
+                    return;
+                }
+
+                /* --------------------------------------------------
+                   SUCCESS MESSAGE
+                -------------------------------------------------- */
+                msgBox.style.color = "lime";
+                msgBox.textContent = `Result: ${result.result}`;
+
+                loadHistory();
+
+            } catch (err) {
+                msgBox.style.color = "red";
+                msgBox.textContent = "Unexpected error occurred.";
+            }
+        });
+    });
+
+    /* ----------------------------------------------------------
+       LOAD HISTORY TABLE
+    ----------------------------------------------------------- */
+    async function loadHistory() {
+        const token = localStorage.getItem("access_token");
+        const tableBody = document.getElementById("historyTableBody");
+
+        try {
+            const res = await fetch("/calculations", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            const data = await res.json();
+            tableBody.innerHTML = "";
+
+            data.forEach(item => {
+                let displayDate = "N/A";
+                if (item.created_at) {
+                    const d = new Date(item.created_at);
+                    if (!isNaN(d)) displayDate = d.toLocaleDateString();
+                }
+
+                const row = `
+                    <tr>
+                        <td>${item.type}</td>
+                        <td>${item.a}</td>
+                        <td>${item.b}</td>
+                        <td>${item.result}</td>
+                        <td>${displayDate}</td>
+                        <td>
+                            <button class="delete-btn btn-small" onclick="deleteCalc('${item.id}')">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+        } catch (err) {
+            console.error("History load error:", err);
+        }
+    }
+
+    /* ----------------------------------------------------------
+       DELETE CALCULATION
+    ----------------------------------------------------------- */
+    async function deleteCalc(id) {
+        await fetch(`/calculations/${id}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${localStorage.getItem("access_token")}` }
+        });
+
+        loadHistory();
+    }
+</script>
+
+<!-- ----------------------------------------------------------
+     PAGE HEADER (ONLY ONE HEADER — NO DUPLICATES)
+----------------------------------------------------------- -->
+<div class="dashboard-container">
+    <h2 class="dashboard-title">New Calculation</h2>
+</div>
+
+<!-- ----------------------------------------------------------
+     NEW CALCULATION FORM
+----------------------------------------------------------- -->
+<div class="dashboard-container">
+
+    <form id="calcForm">
+
+        <label>Operation Type</label>
+        <select id="calcType">
+            <option value="add">Add</option>
+            <option value="subtract">Subtract</option>
+            <option value="multiply">Multiply</option>
+            <option value="divide">Divide</option>
+        </select>
+
+        <label>Number A</label>
+        <input id="numA" type="number" required />
+
+        <label>Number B</label>
+        <input id="numB" type="number" required />
+
+        <button type="submit" style="margin-top:20px;">Calculate</button>
+
+        <p id="calcMessage" class="message" style="margin-top:15px;"></p>
+    </form>
+
+</div>
+
+<!-- ----------------------------------------------------------
+     HISTORY TABLE
+----------------------------------------------------------- -->
+<div class="dashboard-container">
+    <h2 class="dashboard-title">Calculation History</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>A</th>
+                <th>B</th>
+                <th>Result</th>
+                <th>Date</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+
+        <tbody id="historyTableBody"></tbody>
+    </table>
+</div>
+
+{% endblock %}

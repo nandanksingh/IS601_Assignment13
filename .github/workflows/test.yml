@@ -66,19 +66,13 @@ jobs:
             sleep 1
           done
 
-      # ----------------------------------------------------
-      # ONLY RUN UNIT & INTEGRATION TESTS
-      # E2E tests are excluded via pytest marker
-      # ----------------------------------------------------
       - name: Run Unit + Integration Tests (Skip E2E)
         env:
           DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
-          PYTEST_ADDOPTS: "-m not e2e"
         run: |
           source venv/bin/activate
-          pytest --cov=app --cov-branch --cov-report=term-missing \
+          pytest -m "not e2e" --cov=app --cov-branch --cov-report=term-missing \
                  --cov-fail-under=90 -v
-
 
   # --------------------------------------------------------
   # 2. SECURITY JOB — Trivy Scan
@@ -101,7 +95,6 @@ jobs:
           exit-code: 0
           ignore-unfixed: true
           severity: CRITICAL,HIGH
-
 
   # --------------------------------------------------------
   # 3. DEPLOY JOB — Push to Docker Hub

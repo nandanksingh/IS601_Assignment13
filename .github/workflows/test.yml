@@ -4,7 +4,7 @@
 # File: .github/workflows/test.yml
 # ----------------------------------------------------------
 
-name: Assignment 13 - JWT Auth + UI + Integration Testing CI/CD
+name: Assignment 13 - JWT Auth + Integration Testing CI/CD
 
 on:
   push:
@@ -18,6 +18,9 @@ permissions:
 
 jobs:
 
+  # --------------------------------------------------------
+  # 1. TEST JOB (Unit + Integration Only, Skip E2E)
+  # --------------------------------------------------------
   test:
     runs-on: ubuntu-latest
 
@@ -38,9 +41,11 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -61,10 +66,70 @@ jobs:
             sleep 1
           done
 
-      - name: Run Unit + Integration Tests ONLY
+      - name: Run Unit + Integration Tests (Skip E2E)
         env:
           DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
-          PYTEST_ADDOPTS: "-m not e2e and not skip_fallback"
+          PYTEST_ADDOPTS: "-m not e2e"
         run: |
           source venv/bin/activate
-          pytest --cov=app --cov-branch --cov-report=term-missing --cov-fail-under=90 -v
+          pytest --cov=app --cov-branch --cov-report=term-missing \
+                 --cov-fail-under=90 -v
+
+  # --------------------------------------------------------
+  # 2. SECURITY JOB — Trivy Scan
+  # --------------------------------------------------------
+  security:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker Image for Scan
+        run: docker build -t module13_app_image:img_m13 .
+
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: module13_app_image:img_m13
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+  # --------------------------------------------------------
+  # 3. DEPLOY JOB — Push to Docker Hub
+  # --------------------------------------------------------
+  deploy:
+    needs: security
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker Hub Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            nandanksingh/module13_fastapi_jwt_auth:img_m13
+            nandanksingh/module13_fastapi_jwt_auth:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=registry,ref=nandanksingh/module13_fastapi_jwt_auth:cache
+          cache-to: type=inline,mode=max
+
+      - name: Verify Push
+        run: docker pull nandanksingh/module13_fastapi_jwt_auth:img_m13

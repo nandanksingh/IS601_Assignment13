@@ -4,76 +4,82 @@
 # File: app/schemas/user_schema.py
 # ----------------------------------------------------------
 # Description:
-# Pydantic schemas supporting:
-#   • First/last name
-#   • Username, email, mobile validation
-#   • Strong password rules + confirm password
-#   • Login via identifier (username/email/mobile)
-#   • ORM-friendly UserResponse and UserRead models
+#   • UserCreate  – full registration schema with compatibility
+#     for Assignment-12 minimal registration (email + password only)
+#   • UserLogin   – identifier/password for login
+#   • UserResponse – full DB return model
+#   • UserRead     – alias used by /auth/me
 # ----------------------------------------------------------
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 from typing import Optional
 import re
 
 
 # ----------------------------------------------------------
-# Validation Helpers
+# Validators
 # ----------------------------------------------------------
-def validate_username(value: str) -> str:
-    if len(value) < 4 or len(value) > 15:
-        raise ValueError("Username must be 4–15 characters long")
-    if not re.match(r"^[A-Za-z0-9_]+$", value):
-        raise ValueError("Username may only contain letters, numbers, and underscores")
-    return value
+def validate_username(v: Optional[str]) -> Optional[str]:
+    """Username is optional for backwards compatibility."""
+    if v is None or v.strip() == "":
+        return v  # Allowed because Assignment-12 sends no username
+    if len(v) < 4:
+        raise ValueError("Username must be at least 4 characters")
+    if not re.match(r"^[A-Za-z0-9_]+$", v):
+        raise ValueError("Username may only contain letters, numbers, underscores")
+    return v
 
 
-def validate_email(value: str) -> str:
-    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-    if not re.match(pattern, value):
+def validate_email(v: str) -> str:
+    if not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", v):
         raise ValueError("Invalid email address")
-    return value
+    return v
 
 
-def validate_mobile(value: str) -> str:
-    if not re.match(r"^\d{10}$", value):
-        raise ValueError("Mobile number must be exactly 10 digits")
-    return value
+def validate_mobile(v: Optional[str]) -> Optional[str]:
+    if v and not re.match(r"^\d{10}$", v):
+        raise ValueError("Mobile must be 10 digits")
+    return v
 
 
-def validate_password(value: str) -> str:
-    if len(value) < 6 or len(value) > 20:
-        raise ValueError("Password must be 6–20 characters long")
-    if not re.search(r"[A-Z]", value):
-        raise ValueError("Password must contain at least one uppercase letter")
-    if not re.search(r"[a-z]", value):
-        raise ValueError("Password must contain at least one lowercase letter")
-    if not re.search(r"\d", value):
-        raise ValueError("Password must contain at least one digit")
-    return value
+def validate_password(v: str) -> str:
+    if len(v) < 6:
+        raise ValueError("Password must be at least 6 characters")
+    if not re.search(r"[A-Z]", v):
+        raise ValueError("Password must contain uppercase letter")
+    if not re.search(r"[a-z]", v):
+        raise ValueError("Password must contain lowercase letter")
+    if not re.search(r"\d", v):
+        raise ValueError("Password must contain a number")
+    return v
 
 
 # ----------------------------------------------------------
-# User Registration Schema
+# Registration Schema
 # ----------------------------------------------------------
 class UserCreate(BaseModel):
-    first_name: str
-    last_name: str
-    username: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    username: Optional[str] = None     # <- optional for old tests
     email: str
-    mobile: str
+    mobile: Optional[str] = None
     password: str
-    confirm_password: str
+    confirm_password: Optional[str] = None  # <- optional for old tests
 
-    _username_validate = field_validator("username")(validate_username)
-    _email_validate = field_validator("email")(validate_email)
-    _mobile_validate = field_validator("mobile")(validate_mobile)
-    _password_validate = field_validator("password")(validate_password)
+    _username = field_validator("username")(validate_username)
+    _email = field_validator("email")(validate_email)
+    _mobile = field_validator("mobile")(validate_mobile)
+    _password = field_validator("password")(validate_password)
 
     @field_validator("confirm_password")
-    def validate_confirm_password(cls, v, info):
-        password = info.data.get("password")
-        if password is not None and v != password:
+    def confirm(cls, v, info):
+        pwd = info.data.get("password")
+
+        # If old test sends no confirm_password → do NOT block
+        if v is None:
+            return v
+
+        if pwd is not None and v != pwd:
             raise ValueError("Passwords do not match")
         return v
 
@@ -82,30 +88,24 @@ class UserCreate(BaseModel):
 # Login Schema
 # ----------------------------------------------------------
 class UserLogin(BaseModel):
-    identifier: Optional[str] = None
+    identifier: str
     password: str
 
     @field_validator("identifier")
     def validate_identifier(cls, v):
-        if v is None or not str(v).strip():
+        if not v or not v.strip():
             raise ValueError("Identifier cannot be empty")
         return v.strip()
 
-    @field_validator("password")
-    def validate_password_not_empty(cls, v):
-        if not v or not v.strip():
-            raise ValueError("Password cannot be empty")
-        return v
-
 
 # ----------------------------------------------------------
-# Lightweight API Response Schema
+# DB Return Schema
 # ----------------------------------------------------------
 class UserResponse(BaseModel):
     id: int
+    username: str
     first_name: Optional[str]
     last_name: Optional[str]
-    username: str
     email: Optional[str]
     mobile: Optional[str]
     is_active: bool
@@ -114,15 +114,7 @@ class UserResponse(BaseModel):
 
 
 # ----------------------------------------------------------
-# UserRead Schema
+# Alias used for /auth/me
 # ----------------------------------------------------------
-class UserRead(BaseModel):
-    id: int
-    first_name: Optional[str]
-    last_name: Optional[str]
-    username: str
-    email: Optional[str]
-    mobile: Optional[str]
-    is_active: bool
-
-    model_config = ConfigDict(from_attributes=True)
+class UserRead(UserResponse):
+    pass

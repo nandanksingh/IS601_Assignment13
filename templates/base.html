@@ -4,9 +4,9 @@
      File: templates/base.html
 
      Description:
-     Global layout inherited by all UI pages. Includes animated
-     gradient background, dark navbar, dynamic login/logout state,
-     and a content block for child templates.
+     Global layout for all UI pages (navbar, theme, structure).
+     Navbar updates based on user authentication state using
+     localStorage (client-side only).
 ----------------------------------------------------------- -->
 
 <!DOCTYPE html>
@@ -31,6 +31,7 @@
         <div class="nav-title">Calculations App</div>
 
         <div class="nav-links" id="navLinks">
+            <!-- Default: Show Home/Login/Register -->
             <a href="/">Home</a>
             <a href="/login">Login</a>
             <a href="/register">Register</a>
@@ -49,12 +50,20 @@
             const nav = document.getElementById("navLinks");
 
             if (token && username) {
+                // User is logged in → Show dashboard + logout
                 nav.innerHTML = `
-                    <span style="margin-right: 18px;">
+                    <span style="margin-right: 16px;">
                         Welcome, <strong>${username}</strong>
                     </span>
                     <a href="/dashboard">Dashboard</a>
                     <a href="#" onclick="logoutUser()">Logout</a>
+                `;
+            } else {
+                // User NOT logged in → Show home/login/register
+                nav.innerHTML = `
+                    <a href="/">Home</a>
+                    <a href="/login">Login</a>
+                    <a href="/register">Register</a>
                 `;
             }
         });

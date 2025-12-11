@@ -1,10 +1,10 @@
 # ----------------------------------------------------------
 # Author: Nandan Kumar
-# Assignment-13: CI/CD Pipeline
+# Assignment-13: JWT Authentication + UI + E2E Testing CI/CD
 # File: .github/workflows/test.yml
 # ----------------------------------------------------------
 
-name: Assignment 13 - module13_fastapi_jwt_auth CI/CD
+name: Assignment 13 - JWT Auth + UI + E2E Testing CI/CD
 
 on:
   push:
@@ -19,7 +19,7 @@ permissions:
 jobs:
 
   # --------------------------------------------------------
-  # 1. TEST JOB
+  # 1. TEST JOB (Unit + Integration + Playwright E2E)
   # --------------------------------------------------------
   test:
     runs-on: ubuntu-latest
@@ -51,7 +51,7 @@ jobs:
 
       - name: Install Dependencies
         env:
-          DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m12_db
+          DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
         run: |
           python -m venv venv
           source venv/bin/activate
@@ -66,13 +66,22 @@ jobs:
             sleep 1
           done
 
-      - name: Run Tests
+      # ----------------------------------------------------
+      # Playwright installation (REQUIRED for Assignment 13)
+      # ----------------------------------------------------
+      - name: Install Playwright Browsers
+        run: |
+          source venv/bin/activate
+          playwright install --with-deps chromium
+
+      - name: Run All Tests (Unit + Integration + E2E)
         env:
-          DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m12_db
+          DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
           TEST_DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/test_db
         run: |
           source venv/bin/activate
-          pytest -m "not e2e" --cov=app --cov-branch --cov-report=term-missing --cov-fail-under=90 -v
+          pytest --cov=app --cov-branch --cov-report=term-missing \
+                 --cov-fail-under=90 -v
 
 
   # --------------------------------------------------------
@@ -86,12 +95,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker Image for Scan
-        run: docker build -t module13_app_image:latest .
+        run: docker build -t module13_app_image:img_m13 .
 
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: module13_app_image:latest
+          image-ref: module13_app_image:img_m13
           format: table
           exit-code: 0
           ignore-unfixed: true
@@ -99,7 +108,7 @@ jobs:
 
 
   # --------------------------------------------------------
-  # 3. DEPLOY JOB — pushes to Docker Hub
+  # 3. DEPLOY JOB — Push to Docker Hub
   # --------------------------------------------------------
   deploy:
     needs: security
@@ -108,7 +117,6 @@ jobs:
     environment: production
 
     steps:
-
       - uses: actions/checkout@v4
 
       - name: Docker Setup Buildx
@@ -126,11 +134,11 @@ jobs:
           context: .
           push: true
           tags: |
-            nandanksingh/module13_fastapi_jwt_auth:latest
+            nandanksingh/module13_fastapi_jwt_auth:img_m13
             nandanksingh/module13_fastapi_jwt_auth:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=nandanksingh/module13_fastapi_jwt_auth:cache
           cache-to: type=inline,mode=max
 
       - name: Verify Push
-        run: docker pull nandanksingh/module13_fastapi_jwt_auth:latest
+        run: docker pull nandanksingh/module13_fastapi_jwt_auth:img_m13

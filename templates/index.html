@@ -4,20 +4,22 @@
      File: templates/index.html
 
      Description:
-     Public landing page for the application. If a user is already
-     authenticated, they are automatically redirected to the
-     dashboard. Otherwise, the page displays a clean welcome
-     message encouraging the user to log in or register.
+     Public landing page for the application. Ensures that when
+     opened directly (such as from VSCode), stale authentication
+     tokens do not auto-redirect to /dashboard.
 ----------------------------------------------------------- -->
 
 {% extends "base.html" %}
 {% block content %}
 
 <script>
-  // Redirect authenticated users
-  if (localStorage.getItem("access_token")) {
-    window.location.href = "/dashboard";
-  }
+  // ALWAYS clear tokens when landing on homepage directly
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("username");
+  localStorage.removeItem("user_id");
+
+  // No redirect here — let user decide Login / Register
 </script>
 
 <div class="center-box" style="max-width:650px;">

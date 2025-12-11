@@ -4,13 +4,13 @@
 # File: app/schemas/__init__.py
 # ----------------------------------------------------------
 # Description:
-# Re-export all schemas for clean imports across models,
-# routers, and tests. Includes UserRead for compatibility.
+# Central export module for Pydantic schemas. Makes user and
+# calculation schemas available to routers, models, and tests.
+# Updated for Assignment 13 to REMOVE UserLogin (no longer used).
 # ----------------------------------------------------------
 
 from .user_schema import (
     UserCreate,
-    UserLogin,
     UserResponse,
     UserRead,
 )

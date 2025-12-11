@@ -1,17 +1,17 @@
 # ----------------------------------------------------------
 # Author: Nandan Kumar
-# Assignment-13: FastAPI JWT Authentication + UI
+# Assignment-12/13: FastAPI Modular Calculator + JWT Auth
 # File: Dockerfile
 # ----------------------------------------------------------
 # Description:
-# Production Dockerfile for FastAPI (JWT Auth + UI Pages).
-# Includes:
+# Production-ready Dockerfile for running the FastAPI Modular
+# Calculator inside Docker. Includes:
 #   • Python 3.12-slim base
-#   • Layer caching for faster rebuilds
-#   • Non-root container user
-#   • Postgres client for optional DB readiness
-#   • Healthcheck pointing to /health
-#   • Runs Uvicorn with 2 workers
+#   • PostgreSQL client for pg_isready checks
+#   • Non-root appuser for security
+#   • layer-cached dependency installation
+#   • Healthcheck hitting /health
+#   • Uvicorn (2 workers) for performance
 # ----------------------------------------------------------
 
 
@@ -23,9 +23,7 @@ FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PATH="/home/appuser/.local/bin:$PATH" \
-    DATABASE_URL="sqlite:///./app.db" \
-    UVICORN_PORT=8000
+    PATH="/home/appuser/.local/bin:$PATH"
 
 WORKDIR /app
 
@@ -39,11 +37,17 @@ RUN apt-get update && \
         libpq-dev \
         postgresql-client \
         curl \
+        # ------------------------------------------------------
+        # Assignment 13 Update:
+        # Install Node.js + npm for Playwright dependencies
+        # (Required when GitHub Actions builds the Docker image)
+        # ------------------------------------------------------
+        nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 
 # ----------------------------------------------------------
-# 3. Add Non-root User
+# 3. Security: Create Non-root Application User
 # ----------------------------------------------------------
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
@@ -63,22 +67,22 @@ COPY . /app
 
 
 # ----------------------------------------------------------
-# 6. Set Proper File Ownership
+# 6. Set Permissions
 # ----------------------------------------------------------
 RUN chown -R appuser:appgroup /app
 USER appuser
 
 
 # ----------------------------------------------------------
-# 7. Expose Port + Healthcheck
+# 7. Expose Application Port & Healthcheck
 # ----------------------------------------------------------
 EXPOSE 8000
 
 HEALTHCHECK --interval=20s --timeout=5s --retries=3 \
-    CMD curl -f http://localhost:${UVICORN_PORT}/health || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
 
 # ----------------------------------------------------------
-# 8. Start FastAPI with Uvicorn
+# 8. Start FastAPI using Uvicorn
 # ----------------------------------------------------------
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

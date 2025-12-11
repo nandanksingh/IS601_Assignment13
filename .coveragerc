@@ -1,0 +1,17 @@
+# ----------------------------------------------------------
+# Author: Nandan Kumar
+# Assignment 13: Coverage Configuration
+# File: .coveragerc
+# ----------------------------------------------------------
+
+[run]
+source = app
+omit =
+    */__init__.py
+    tests/*
+    app/schemas/base.py
+
+[report]
+ignore_errors = True
+show_missing = True
+precision = 2

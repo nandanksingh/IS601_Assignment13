@@ -1,10 +1,10 @@
 # ----------------------------------------------------------
 # Author: Nandan Kumar
-# Assignment-13: JWT Login/Registration with Client-Side Validation & Playwright E2E
+# Assignment-13: JWT Authentication + UI + E2E Testing
 # File: docker-compose.yml
 # ----------------------------------------------------------
 
-name: fastapi_calculator_project
+name: fastapi_jwt_project_m13
 
 services:
 
@@ -79,7 +79,7 @@ services:
       - app-network
 
   # --------------------------------------------------------
-  # PYTEST CONTAINER
+  # PYTEST CONTAINER (INTEGRATION + E2E)
   # --------------------------------------------------------
   tests:
     container_name: m13_tests_integration

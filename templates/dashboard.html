@@ -4,10 +4,10 @@
      File: templates/dashboard.html
 
      Description:
-     Authenticated dashboard page:
+     Authenticated dashboard with:
        • New calculation form
-       • Clean error handling (no [object Object])
-       • Calculation history table
+       • Meaningful error messages
+       • Calculation history
        • Delete functionality
 ----------------------------------------------------------- -->
 
@@ -15,11 +15,7 @@
 {% block content %}
 
 <script>
-    /* ----------------------------------------------------------
-       PAGE LOAD — VERIFY AUTH
-    ----------------------------------------------------------- */
     document.addEventListener("DOMContentLoaded", () => {
-
         const token = localStorage.getItem("access_token");
         if (!token) {
             window.location.href = "/login";
@@ -28,9 +24,9 @@
 
         loadHistory();
 
-        /* ------------------------------------------------------
-           NEW CALCULATION SUBMIT HANDLER
-        ------------------------------------------------------ */
+        // ----------------------------------------------------------
+        // NEW CALCULATION SUBMIT HANDLER
+        // ----------------------------------------------------------
         document.getElementById("calcForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
@@ -53,9 +49,7 @@
 
                 const result = await response.json();
 
-                /* --------------------------------------------------
-                   FIXED — HUMAN READABLE ERROR MESSAGES
-                -------------------------------------------------- */
+                // Human-readable error messages
                 if (!response.ok) {
                     msgBox.style.color = "red";
 
@@ -75,9 +69,7 @@
                     return;
                 }
 
-                /* --------------------------------------------------
-                   SUCCESS MESSAGE
-                -------------------------------------------------- */
+                // SUCCESS
                 msgBox.style.color = "lime";
                 msgBox.textContent = `Result: ${result.result}`;
 
@@ -90,12 +82,12 @@
         });
     });
 
-    /* ----------------------------------------------------------
-       LOAD HISTORY TABLE
-    ----------------------------------------------------------- */
+    // ----------------------------------------------------------
+    // LOAD HISTORY TABLE
+    // ----------------------------------------------------------
     async function loadHistory() {
         const token = localStorage.getItem("access_token");
-        const tableBody = document.getElementById("historyTableBody");
+        const body = document.getElementById("historyTableBody");
 
         try {
             const res = await fetch("/calculations", {
@@ -103,7 +95,7 @@
             });
 
             const data = await res.json();
-            tableBody.innerHTML = "";
+            body.innerHTML = "";
 
             data.forEach(item => {
                 let displayDate = "N/A";
@@ -113,20 +105,20 @@
                 }
 
                 const row = `
-                    <tr>
-                        <td>${item.type}</td>
-                        <td>${item.a}</td>
-                        <td>${item.b}</td>
-                        <td>${item.result}</td>
-                        <td>${displayDate}</td>
-                        <td>
-                            <button class="delete-btn btn-small" onclick="deleteCalc('${item.id}')">
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
+                <tr>
+                    <td>${item.type}</td>
+                    <td>${item.a}</td>
+                    <td>${item.b}</td>
+                    <td>${item.result}</td>
+                    <td>${displayDate}</td>
+                    <td>
+                        <button class="delete-btn btn-small" onclick="deleteCalc('${item.id}')">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+                body.innerHTML += row;
             });
 
         } catch (err) {
@@ -134,9 +126,9 @@
         }
     }
 
-    /* ----------------------------------------------------------
-       DELETE CALCULATION
-    ----------------------------------------------------------- */
+    // ----------------------------------------------------------
+    // DELETE CALCULATION
+    // ----------------------------------------------------------
     async function deleteCalc(id) {
         await fetch(`/calculations/${id}`, {
             method: "DELETE",
@@ -148,11 +140,9 @@
 </script>
 
 <!-- ----------------------------------------------------------
-     PAGE HEADER (ONLY ONE HEADER — NO DUPLICATES)
+     DASHBOARD HEADER (TEST NEEDS THIS EXACT TEXT)
 ----------------------------------------------------------- -->
-<div class="dashboard-container">
-    <h2 class="dashboard-title">New Calculation</h2>
-</div>
+<h2 class="dashboard-title">Calculations Dashboard</h2>
 
 <!-- ----------------------------------------------------------
      NEW CALCULATION FORM

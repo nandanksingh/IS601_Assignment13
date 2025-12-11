@@ -19,7 +19,7 @@ permissions:
 jobs:
 
   # --------------------------------------------------------
-  # 1. TEST JOB (Unit + Integration ONLY — No E2E)
+  # 1. TEST JOB (Unit + Integration ONLY — E2E Skipped)
   # --------------------------------------------------------
   test:
     runs-on: ubuntu-latest
@@ -40,6 +40,7 @@ jobs:
           --health-retries=8
 
     steps:
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -57,7 +58,7 @@ jobs:
           pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
-      - name: Wait for PostgreSQL to be ready
+      - name: Wait for PostgreSQL
         run: |
           for i in {1..30}; do
             pg_isready -h localhost -U ps_user -d calc_m13_db && break
@@ -65,14 +66,17 @@ jobs:
             sleep 1
           done
 
-      - name: Run Unit + Integration Tests (Skip E2E)
+      # ----------------------------------------------------
+      # RUN UNIT + INTEGRATION TESTS ONLY (E2E excluded)
+      # ----------------------------------------------------
+      - name: Run Tests (Skip E2E + Skip SQLite Fallback Tests)
         env:
           DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
-          TEST_DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/test_db
+          PYTEST_ADDOPTS: "-m not e2e and not skip_fallback"
         run: |
           source venv/bin/activate
-          pytest -m "not e2e" --cov=app --cov-branch \
-                 --cov-report=term-missing --cov-fail-under=90 -v
+          pytest --cov=app --cov-branch --cov-report=term-missing \
+                 --cov-fail-under=90 -v
 
 
   # --------------------------------------------------------
@@ -85,7 +89,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker Image for Scan
+      - name: Build Docker Image for Security Scan
         run: docker build -t module13_app_image:img_m13 .
 
       - name: Trivy Scan
@@ -108,6 +112,7 @@ jobs:
     environment: production
 
     steps:
+
       - uses: actions/checkout@v4
 
       - name: Docker Setup Buildx

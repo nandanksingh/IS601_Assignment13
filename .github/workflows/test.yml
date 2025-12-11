@@ -4,7 +4,7 @@
 # File: .github/workflows/test.yml
 # ----------------------------------------------------------
 
-name: Assignment 13 - JWT Auth + Integration Testing CI/CD
+name: Assignment 13 - CI/CD Pipeline
 
 on:
   push:
@@ -19,7 +19,7 @@ permissions:
 jobs:
 
   # --------------------------------------------------------
-  # 1. TEST JOB (Unit + Integration Only, Skip E2E)
+  # 1. TEST JOB (Unit + Integration Only — Skip E2E)
   # --------------------------------------------------------
   test:
     runs-on: ubuntu-latest
@@ -66,6 +66,10 @@ jobs:
             sleep 1
           done
 
+      # ----------------------------------------------------
+      # ONLY RUN UNIT & INTEGRATION TESTS
+      # E2E tests are excluded via pytest marker
+      # ----------------------------------------------------
       - name: Run Unit + Integration Tests (Skip E2E)
         env:
           DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
@@ -74,6 +78,7 @@ jobs:
           source venv/bin/activate
           pytest --cov=app --cov-branch --cov-report=term-missing \
                  --cov-fail-under=90 -v
+
 
   # --------------------------------------------------------
   # 2. SECURITY JOB — Trivy Scan
@@ -96,6 +101,7 @@ jobs:
           exit-code: 0
           ignore-unfixed: true
           severity: CRITICAL,HIGH
+
 
   # --------------------------------------------------------
   # 3. DEPLOY JOB — Push to Docker Hub

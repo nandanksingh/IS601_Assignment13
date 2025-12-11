@@ -19,7 +19,7 @@ permissions:
 jobs:
 
   # --------------------------------------------------------
-  # 1. TEST JOB (Unit + Integration Only — E2E Skipped)
+  # 1. TEST JOB (Unit + Integration ONLY — No E2E)
   # --------------------------------------------------------
   test:
     runs-on: ubuntu-latest
@@ -40,7 +40,6 @@ jobs:
           --health-retries=8
 
     steps:
-
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -66,17 +65,14 @@ jobs:
             sleep 1
           done
 
-      # ----------------------------------------------------
-      # RUN ONLY UNIT + INTEGRATION TESTS (SKIP E2E)
-      # ----------------------------------------------------
       - name: Run Unit + Integration Tests (Skip E2E)
         env:
           DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/calc_m13_db
-          PYTEST_ADDOPTS: "-m not e2e"
+          TEST_DATABASE_URL: postgresql://ps_user:ps_password@localhost:5432/test_db
         run: |
           source venv/bin/activate
-          pytest --cov=app --cov-branch --cov-report=term-missing \
-                 --cov-fail-under=90 -v
+          pytest -m "not e2e" --cov=app --cov-branch \
+                 --cov-report=term-missing --cov-fail-under=90 -v
 
 
   # --------------------------------------------------------
@@ -112,7 +108,6 @@ jobs:
     environment: production
 
     steps:
-
       - uses: actions/checkout@v4
 
       - name: Docker Setup Buildx
